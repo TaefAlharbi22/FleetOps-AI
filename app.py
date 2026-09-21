@@ -8,7 +8,7 @@ import pandas as pd
 import streamlit as st
 import plotly.express as px
 import plotly.graph_objects as go
-
+import kagglehub
 try:
     from google import genai
     from google.genai import types
@@ -227,17 +227,35 @@ def read_csv_upload(file):
 
 def find_dataset():
     filename = "logistics_predictive_maintenanceV2.csv"
+
     here = Path(__file__).resolve().parent
+
+    # First: check if the dataset already exists locally
     candidates = [
         here / "data" / filename,
         here.parent / "data" / filename,
         Path.cwd() / "data" / filename,
-        Path("/content/FleetOps_AI_Streamlit/data") / filename,
-        Path("/content/drive/MyDrive/FleetOps_AI/data") / filename,
     ]
-    for p in candidates:
-        if p.exists():
-            return p
+
+    for path in candidates:
+        if path.exists():
+            return path
+
+    # Second: automatically download the public dataset from Kaggle
+    try:
+        downloaded_path = kagglehub.dataset_download(
+            "datasetengineer/logistics-vehicle-maintenance-history-dataset",
+            path=filename
+        )
+
+        downloaded_path = Path(downloaded_path)
+
+        if downloaded_path.exists():
+            return downloaded_path
+
+    except Exception as e:
+        st.warning(f"Automatic dataset download failed: {e}")
+
     return None
 
 def prepare_data(df):
